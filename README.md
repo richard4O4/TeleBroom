@@ -24,7 +24,31 @@ Telegram imposes rate limits ("Flood Wait") on frequent API calls like message d
 
 ## 🛠 Installation
 
-Download the latest version from the [Releases](https://github.com/username/repo/releases) page.
+Download the latest version from the [Releases](https://github.com/richard4O4/TeleBroom/releases) page.
+
+## 🔑 Telegram API Setup
+
+To use TeleBroom, you need to obtain your own Telegram API credentials. This is a one-time process.
+
+1. **Log in**: Visit [my.telegram.org](https://my.telegram.org) and enter your phone number in international format.
+2. **API Development Tools**: Click on the **"API development tools"** link.
+3. **Create New Application**: If you haven't created one before, you will see a form. Fill it out as follows:
+   - **App title**: `TeleBroom` *(A descriptive name for your app)*
+   - **Short name**: `telebroom` *(A short alphanumeric name, no spaces)*
+   - **URL**: `https://github.com/richard4O4/TeleBroom` *(Optional, can be left blank)*
+   - **Platform**: Select **"Desktop"**
+   - **Description**: `Telegram message management tool` *(Optional)*
+4. **Submit**: Click **"Create application"**.
+5. **Copy Credentials**: You will now see your **`App api_id`** and **`App api_hash`**. 
+   - **Keep these secret!** Do not share them or commit them to public repositories.
+6. **Configuration**: When you first run TeleBroom, it will prompt you to enter these values to log in.
+
+> [!TIP]
+> **Alternative (Official Credentials)**: If you don't want to apply for your own API, you can use the official Telegram Desktop credentials (sourced from [tdesktop/snapcraft.yaml](https://github.com/telegramdesktop/tdesktop/blob/dev/snap/snapcraft.yaml#L55-L56)):
+> - **API ID**: `611335`
+> - **API Hash**: `d524b414d21f4d37f08684c1df41ac9c`
+
+
 
 ## 🏗️ Development
 
