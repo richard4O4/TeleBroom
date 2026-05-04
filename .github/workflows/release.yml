@@ -5,7 +5,34 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.id }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: get version
+        id: get_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: create release
+        id: create-release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: "TeleBroom v${{ steps.get_version.outputs.version }}"
+          body: "Automated release for TeleBroom. Includes installers for macOS (ARM64 & x64), Windows, and Linux."
+          draft: true
+          prerelease: false
+
+  build:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -13,24 +40,18 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            args: --target aarch64-apple-darwin
-            description: "macOS Silicon"
-          - platform: macos-latest
-            args: --target x86_64-apple-darwin
-            description: "macOS Intel"
+            description: "macOS"
           - platform: windows-latest
-            args: ""
-            description: "Windows x64"
+            description: "Windows"
           - platform: ubuntu-22.04
-            args: ""
-            description: "Linux (Debian & Fedora)"
+            description: "Linux"
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Install dependencies (Ubuntu only)
+      - name: Install dependencies (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -58,14 +79,80 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Build and Release
-        uses: tauri-apps/tauri-action@v0
+      - name: Build and Release (${{ matrix.platform == 'macos-latest' && 'macOS ARM64' || matrix.description }})
+        uses: tauri-apps/tauri-action@v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: "TeleBroom v__VERSION__"
-          releaseBody: "Automated release for TeleBroom. Includes installers for macOS, Windows, and Linux (Debian/Fedora)."
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          tagName: v${{ needs.create-release.outputs.version }}
+          releaseName: "TeleBroom v${{ needs.create-release.outputs.version }}"
+          args: ${{ matrix.platform == 'macos-latest' && '--target aarch64-apple-darwin' || '' }}
+
+      - name: Build and Release (macOS x64)
+        if: matrix.platform == 'macos-latest'
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          tagName: v${{ needs.create-release.outputs.version }}
+          releaseName: "TeleBroom v${{ needs.create-release.outputs.version }}"
+          args: --target x86_64-apple-darwin
+
+      - name: Custom Arch Linux Packaging
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          # 1. Install packaging tools
+          sudo apt-get update && sudo apt-get install -y binutils zstd
+          
+          # 2. Locate the deb package
+          DEB_FILE=$(find src-tauri/target/release/bundle/deb/ -name "*.deb" | head -n 1)
+          if [ -z "$DEB_FILE" ]; then
+            DEB_FILE=$(find target/release/bundle/deb/ -name "*.deb" | head -n 1)
+          fi
+          
+          if [ -z "$DEB_FILE" ]; then
+            echo "Error: Could not find .deb file"
+            exit 1
+          fi
+          
+          VERSION=${{ needs.create-release.outputs.version }}
+          PKG_NAME="telebroom-${VERSION}-1-x86_64"
+          
+          # 3. Extract deb content
+          mkdir -p arch_tmp
+          cd arch_tmp
+          ar x "../$DEB_FILE"
+          
+          mkdir -p ../arch_pkg
+          DATA_ARCHIVE=$(ls data.tar.*)
+          tar -xf "$DATA_ARCHIVE" -C ../arch_pkg/
+          cd ..
+          
+          # 4. Create .PKGINFO
+          cat <<EOF > arch_pkg/.PKGINFO
+          pkgname = telebroom
+          pkgver = ${VERSION}
+          pkgrel = 1
+          pkgdesc = TeleBroom: Telegram Group Message Deleter
+          url = https://github.com/richard4O4/TeleBroom
+          builddate = $(date +%s)
+          packager = GitHub Actions
+          size = $(du -sb arch_pkg/usr | cut -f1)
+          arch = x86_64
+          license = MIT
+          depend = webkit2gtk-4.1
+          depend = gtk3
+          depend = libappindicator-gtk3
+          EOF
+          
+          # 5. Create the .tar.zst package
+          cd arch_pkg
+          tar --zstd -cf "../${PKG_NAME}.pkg.tar.zst" .PKGINFO usr
+          cd ..
+          
+          # 6. Upload to the release
+          gh release upload "v${VERSION}" "${PKG_NAME}.pkg.tar.zst" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
