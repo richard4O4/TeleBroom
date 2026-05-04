@@ -233,7 +233,26 @@ async fn get_chats(state: State<'_, AppState>) -> Result<Vec<ChatInfo>, String> 
             }
 
             let count = if let Some(input_peer) = peer.to_ref().await {
-                client_clone.search_messages(input_peer).sent_by_self().total().await.unwrap_or(0) as i32
+                let total = client_clone.search_messages(input_peer).sent_by_self().total().await.unwrap_or(0) as i32;
+                if total > 0 {
+                    // Verification step: Iterate through messages and exclude service messages (like "joined group").
+                    // For performance, we only do a full count if the total is small.
+                    // If total is large, we check the first few to see if they are service messages.
+                    let mut actual_count = 0;
+                    let mut scanned = 0;
+                    let mut it = client_clone.search_messages(input_peer).sent_by_self().limit(100);
+                    while let Ok(Some(msg)) = it.next().await {
+                        scanned += 1;
+                        if msg.action().is_none() {
+                            actual_count += 1;
+                        }
+                    }
+                    
+                    let service_msgs_found = scanned - actual_count;
+                    (total - service_msgs_found).max(0)
+                } else {
+                    total
+                }
             } else {
                 0
             };
@@ -330,6 +349,9 @@ async fn start_deletion(
                 let mut to_delete = Vec::new();
 
                 while let Ok(Some(msg)) = messages.next().await {
+                    if msg.action().is_some() {
+                        continue;
+                    }
                     to_delete.push(msg.id());
 
                     if to_delete.len() >= 100 {
