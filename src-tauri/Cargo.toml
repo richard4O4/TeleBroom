@@ -1,0 +1,35 @@
+[package]
+name = "telebroom"
+version = "0.1.0"
+description = "TeleBroom: Telegram Group Message Deleter"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "telebroom_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+grammers-client = { version = "0.9", features = ["fs"] }
+grammers-session = { version = "0.9", features = ["serde"] }
+grammers-mtsender = "0.9"
+futures-util = "0.3"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+log = "0.4"
+env_logger = "0.10"
+open = "5.3.4"
+base64 = "0.22.1"
+

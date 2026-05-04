@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeleBroom</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- M3 Top App Bar -->
+    <header>
+      <div style="display: flex; align-items: center;">
+        <h1 style="font-size: 1.25rem; font-weight: 500;">TeleBroom</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; position: relative;">
+        <!-- Auth Status Chip -->
+        <div id="auth-status-chip" class="status-chip checking">
+          <div class="status-dot-pulse"></div>
+          <span id="auth-status-text">Checking session...</span>
+        </div>
+
+        <button id="btn-theme-toggle" class="btn-text theme-toggle" title="Toggle Dark/Light Mode">
+          <svg style="width: 20px; height: 20px; fill: currentColor;" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-12.37a.996.996 0 0 0-1.41 0l-1.06 1.06a.996.996 0 0 0 0 1.41c.39.39 1.03.39 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41zM5.99 19.42a.996.996 0 0 0 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0l-1.06 1.06a.996.996 0 0 0 0 1.41z"/></svg>
+        </button>
+
+        <!-- User Profile -->
+        <div id="user-profile" class="user-chip" style="display: none;">
+          <div class="user-chip-avatar">
+            <img id="user-avatar" src="" alt="" style="width: 100%; height: 100%; border-radius: 50%; display: none;" />
+            <div id="user-avatar-placeholder" class="chat-avatar-placeholder" style="width: 32px; height: 32px; font-size: 0.8rem;">?</div>
+            <div class="status-dot-online"></div>
+          </div>
+          <span id="user-name" style="font-size: 0.875rem; font-weight: 500;">User</span>
+        </div>
+
+        <!-- M3 Dropdown Menu -->
+        <div id="user-menu" class="m3-menu">
+          <button id="btn-logout" class="m3-menu-item">
+            <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- Screen 1: Login -->
+      <div id="screen-login" class="screen active">
+        <div class="m3-surface-container" style="padding: 32px; border-radius: 28px; background-color: var(--m3-sys-light-surface-container-low); margin-top: 24px;">
+          <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 8px;">Welcome</h2>
+          <p style="margin-bottom: 32px; color: var(--m3-sys-light-on-surface-variant); font-size: 0.875rem;">
+            Connect to Telegram API to manage your messages.
+            <a href="#" id="link-get-api" style="color: var(--m3-sys-light-primary); text-decoration: none; font-weight: 500;">Get API Credentials ↗</a>
+          </p>
+
+          <div class="m3-textfield">
+            <span class="m3-label">API ID</span>
+            <input type="text" id="api-id" placeholder=" " inputmode="numeric" />
+          </div>
+
+          <div class="m3-textfield">
+            <span class="m3-label">API Hash</span>
+            <input type="text" id="api-hash" placeholder=" " />
+          </div>
+
+          <div class="m3-textfield">
+            <span class="m3-label">Phone Number</span>
+            <input type="tel" id="phone" placeholder="+1234567890" />
+          </div>
+
+          <button id="btn-request-code" class="btn-filled" style="width: 100%; height: 56px; border-radius: 28px; margin-top: 16px;">Request Verification Code</button>
+          <div id="login-error" class="status-msg error" style="display:none; color: var(--m3-sys-light-error); margin-top: 16px; font-size: 0.875rem; text-align: center;"></div>
+        </div>
+      </div>
+
+      <!-- Screen 2: OTP -->
+      <div id="screen-otp" class="screen">
+        <button id="btn-back-to-login" class="btn-text" style="margin-left: -12px; margin-bottom: 12px;">← Back</button>
+        <div class="m3-surface-container" style="padding: 32px; border-radius: 28px; background-color: var(--m3-sys-light-surface-container-low);">
+          <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 8px;">Enter Code</h2>
+          <p style="color: var(--m3-sys-light-on-surface-variant); margin-bottom: 32px;">Sent to your Telegram account.</p>
+
+          <div class="m3-textfield">
+            <span class="m3-label">Verification Code</span>
+            <input type="text" id="otp-code" placeholder=" " />
+          </div>
+
+          <button id="btn-submit-otp" class="btn-filled" style="width: 100%; height: 56px; border-radius: 28px; margin-top: 16px;">Login</button>
+          <div id="otp-error" class="status-msg error" style="display:none; color: var(--m3-sys-light-error); margin-top: 16px; font-size: 0.875rem; text-align: center;"></div>
+        </div>
+      </div>
+
+      <!-- Screen 3: Chat Selection -->
+      <div id="screen-main" class="screen">
+        <div class="m3-search-bar">
+          <svg style="width: 24px; height: 24px; fill: var(--m3-sys-light-on-surface-variant);" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="group-search" class="m3-search-input" placeholder="Search groups..." />
+          <button id="btn-refresh" class="btn-text">Refresh</button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px;">
+          <span style="font-size: 0.875rem; color: var(--m3-sys-light-on-surface-variant); font-weight: 600;">Available Groups</span>
+          <button id="btn-nuclear" class="btn-text" style="color: var(--m3-sys-light-error); font-size: 0.875rem;">Select All</button>
+        </div>
+
+        <div id="chat-list" class="chat-list"></div>
+
+        <div id="main-actions" class="sticky-footer" style="display: none;">
+          <button id="btn-start-delete" class="btn-filled" style="width: 100%; height: 56px; border-radius: 28px;">Delete Messages</button>
+        </div>
+      </div>
+
+      <!-- Screen 4: Deletion Progress (Improved) -->
+      <div id="screen-progress" class="screen">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px;">
+          <h2 style="font-size: 1.5rem; font-weight: 400; color: var(--m3-sys-light-on-surface);">Cleaning Up</h2>
+          <button id="btn-stop" class="btn-tonal" style="border-radius: 12px;">Cancel</button>
+        </div>
+
+        <div id="progress-list" class="chat-list" style="margin-bottom: 16px;"></div>
+
+        <!-- Global Progress Footer -->
+        <div class="m3-progress-footer">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: flex-end;">
+            <div>
+              <div style="font-size: 0.75rem; color: var(--m3-sys-light-on-surface-variant); font-weight: 500;">TOTAL PROGRESS</div>
+              <div id="overall-percent" style="font-size: 1.5rem; font-weight: 700; color: var(--m3-sys-light-primary);">0%</div>
+            </div>
+            <div id="total-eta" style="color: var(--m3-sys-light-tertiary); font-size: 0.8125rem; font-weight: 600;">Calculating ETA...</div>
+          </div>
+          <div class="m3-linear-progress" style="height: 8px;"><div id="overall-bar" class="m3-linear-progress-fill" style="width: 0%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M3 Modal -->
+    <div id="modal-confirm" class="modal-overlay">
+      <div class="modal">
+        <h3 id="modal-title">Confirm Action</h3>
+        <p id="modal-text"></p>
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button id="btn-confirm-no" class="btn-text">Cancel</button>
+          <button id="btn-confirm-yes" class="btn-tonal">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js" type="module"></script>
+</body>
+</html>
