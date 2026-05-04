@@ -11,6 +11,43 @@ use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde_json::json;
 use tokio::sync::Semaphore;
 
+fn get_system_proxy_url() -> Option<String> {
+    // 1. Check environment variables (common on Linux/macOS)
+    for var in ["ALL_PROXY", "all_proxy", "HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"] {
+        if let Ok(proxy) = std::env::var(var) {
+            if !proxy.is_empty() {
+                return Some(proxy);
+            }
+        }
+    }
+
+    // 2. Check system settings
+    #[cfg(target_os = "macos")]
+    {
+        use sysproxy::Sysproxy;
+        // Try common services on macOS
+        for service in ["Wi-Fi", "Ethernet", "Thunderbolt Bridge"] {
+            if let Ok(proxy) = Sysproxy::get_socks(service) {
+                if proxy.enable {
+                    return Some(format!("socks5://{}:{}", proxy.host, proxy.port));
+                }
+            }
+            if let Ok(proxy) = Sysproxy::get_http(service) {
+                if proxy.enable {
+                    return Some(format!("http://{}:{}", proxy.host, proxy.port));
+                }
+            }
+        }
+    }
+
+    if let Ok(proxy) = sysproxy::Sysproxy::get_system_proxy() {
+        if proxy.enable {
+            return Some(format!("http://{}:{}", proxy.host, proxy.port));
+        }
+    }
+    None
+}
+
 async fn get_session_and_config(app: &AppHandle) -> Result<(std::path::PathBuf, Option<i32>), String> {
     let app_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     if !app_dir.exists() {
@@ -28,15 +65,24 @@ async fn get_session_and_config(app: &AppHandle) -> Result<(std::path::PathBuf, 
 }
 
 #[tauri::command]
-async fn check_auth(app: AppHandle, state: State<'_, AppState>) -> Result<bool, String> {
+async fn check_auth(app: AppHandle, state: State<'_, AppState>, proxy_url: Option<String>) -> Result<bool, String> {
     let (session_path, api_id) = get_session_and_config(&app).await?;
     let api_id = match api_id {
         Some(id) => id,
         None => return Ok(false),
     };
 
+    if session_path.exists() {
+        if let Ok(metadata) = std::fs::metadata(&session_path) {
+            if metadata.len() == 0 {
+                let _ = std::fs::remove_file(&session_path);
+            }
+        }
+    }
     let session = Arc::new(SqliteSession::open(session_path.to_str().ok_or("Invalid path")?).await.map_err(|e| e.to_string())?);
-    let SenderPool { runner, handle, .. } = SenderPool::new(Arc::clone(&session), api_id);
+    let mut params = grammers_mtsender::ConnectionParams::default();
+    params.proxy_url = proxy_url.or_else(get_system_proxy_url);
+    let SenderPool { runner, handle, .. } = SenderPool::with_configuration(Arc::clone(&session), api_id, params);
     let client = Client::new(handle);
     tokio::spawn(runner.run());
 
@@ -84,6 +130,7 @@ async fn request_code(
     api_id: i32,
     api_hash: String,
     phone: String,
+    proxy_url: Option<String>,
 ) -> Result<String, String> {
     let (session_path, _) = get_session_and_config(&app).await?;
     
@@ -91,8 +138,17 @@ async fn request_code(
     let config_path = app_dir.join("config.json");
     std::fs::write(&config_path, json!({"api_id": api_id}).to_string()).map_err(|e| e.to_string())?;
 
+    if session_path.exists() {
+        if let Ok(metadata) = std::fs::metadata(&session_path) {
+            if metadata.len() == 0 {
+                let _ = std::fs::remove_file(&session_path);
+            }
+        }
+    }
     let session = Arc::new(SqliteSession::open(session_path.to_str().ok_or("Invalid path")?).await.map_err(|e| e.to_string())?);
-    let SenderPool { runner, handle, .. } = SenderPool::new(Arc::clone(&session), api_id);
+    let mut params = grammers_mtsender::ConnectionParams::default();
+    params.proxy_url = proxy_url.or_else(get_system_proxy_url);
+    let SenderPool { runner, handle, .. } = SenderPool::with_configuration(Arc::clone(&session), api_id, params);
     let client = Client::new(handle);
     tokio::spawn(runner.run());
 
@@ -365,6 +421,9 @@ async fn open_url(url: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = app.get_webview_window("main").map(|w| w.set_focus());
+        }))
         .plugin(tauri_plugin_opener::init())
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![

@@ -7,6 +7,7 @@ let allChats = [];
 let filteredChats = [];
 let progressData = {}; // Map of chat_id -> { deleted_count, scanned_count, is_done, error, flood_wait, startTime, totalMsgs, title }
 let progressElements = new Map(); // chat_id -> DOM element
+let manualProxy = localStorage.getItem('manual_proxy') || null;
 
 // DOM Elements
 const screens = {
@@ -35,8 +36,17 @@ themeToggle.addEventListener('click', () => {
 
 // Check auth on startup
 window.addEventListener('DOMContentLoaded', async () => {
+  // Set a safety timer to ensure we don't stay "Checking" forever
+  const safetyTimer = setTimeout(() => {
+    const chip = document.getElementById('auth-status-chip');
+    if (chip && chip.classList.contains('checking')) {
+       updateStatus('disconnected');
+    }
+  }, 10000); // 10s timeout for auth check
+
   try {
-    const isAuth = await invoke('check_auth');
+    const isAuth = await invoke('check_auth', { proxyUrl: manualProxy });
+    clearTimeout(safetyTimer);
     if (isAuth) {
       await updateMe();
       showScreen('main');
@@ -139,7 +149,7 @@ document.getElementById('btn-request-code').addEventListener('click', async () =
     btn.disabled = true;
     btn.innerHTML = `<div class="spinner" style="width:20px; height:20px; border-width:2px;"></div>`;
     errorEl.style.display = 'none';
-    await invoke('request_code', { apiId, apiHash, phone });
+    await invoke('request_code', { apiId, apiHash, phone, proxyUrl: manualProxy });
     showScreen('otp');
   } catch (err) {
     errorEl.textContent = err;
@@ -152,7 +162,7 @@ document.getElementById('btn-request-code').addEventListener('click', async () =
 
 document.getElementById('link-get-api').addEventListener('click', (e) => {
   e.preventDefault();
-  invoke('open_url', { url: 'https://my.telegram.org/auth' });
+  invoke('open_url', { url: 'https://github.com/richard4O4/TeleBroom#-telegram-api-setup' });
 });
 
 document.getElementById('btn-submit-otp').addEventListener('click', async () => {
@@ -295,6 +305,42 @@ function updateStartBtn() {
 }
 
 document.getElementById('btn-refresh').addEventListener('click', loadChats);
+
+// Proxy Modal Logic
+const proxyBtn = document.getElementById('btn-proxy-settings');
+const proxyModal = document.getElementById('modal-proxy');
+const proxyInput = document.getElementById('proxy-url-input');
+const proxySaveBtn = document.getElementById('btn-proxy-save');
+const proxyCloseBtn = document.getElementById('btn-proxy-close');
+
+proxyBtn.addEventListener('click', () => {
+  proxyInput.value = manualProxy || '';
+  proxyModal.style.display = 'flex';
+});
+
+proxyCloseBtn.addEventListener('click', () => {
+  proxyModal.style.display = 'none';
+});
+
+proxySaveBtn.addEventListener('click', async () => {
+  const newProxy = proxyInput.value.trim() || null;
+  manualProxy = newProxy;
+  if (newProxy) {
+    localStorage.setItem('manual_proxy', newProxy);
+  } else {
+    localStorage.removeItem('manual_proxy');
+  }
+  proxyModal.style.display = 'none';
+  
+  // Re-check auth or reload if needed to apply proxy
+  const currentScreen = Object.keys(screens).find(k => screens[k].classList.contains('active'));
+  if (currentScreen === 'login') {
+      // Just re-initialize auth check
+      try {
+          await invoke('check_auth', { proxyUrl: manualProxy });
+      } catch(e) {}
+  }
+});
 
 // Select All
 document.getElementById('btn-nuclear').addEventListener('click', () => {
