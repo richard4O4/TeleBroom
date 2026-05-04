@@ -1,6 +1,6 @@
 [package]
 name = "telebroom"
-version = "0.1.1"
+version = "0.1.2"
 description = "TeleBroom: Telegram Group Message Deleter"
 authors = ["you"]
 edition = "2021"
@@ -34,4 +34,5 @@ open = "5.3.4"
 base64 = "0.22.1"
 sysproxy = "0.3.0"
 tauri-plugin-single-instance = "2.0.0-rc.0"
+reqwest = { version = "0.12", features = ["socks", "json"] }
 

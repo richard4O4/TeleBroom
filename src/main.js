@@ -312,10 +312,31 @@ const proxyModal = document.getElementById('modal-proxy');
 const proxyInput = document.getElementById('proxy-url-input');
 const proxySaveBtn = document.getElementById('btn-proxy-save');
 const proxyCloseBtn = document.getElementById('btn-proxy-close');
+const proxyTestBtn = document.getElementById('btn-proxy-test');
+const proxyTestResult = document.getElementById('proxy-test-result');
 
 proxyBtn.addEventListener('click', () => {
   proxyInput.value = manualProxy || '';
+  proxyTestResult.textContent = '';
   proxyModal.style.display = 'flex';
+});
+
+proxyTestBtn.addEventListener('click', async () => {
+  const testUrl = proxyInput.value.trim() || null;
+  proxyTestResult.textContent = "Testing...";
+  proxyTestResult.style.color = "var(--m3-sys-light-on-surface-variant)";
+  proxyTestBtn.disabled = true;
+
+  try {
+    const result = await invoke('test_proxy', { proxyUrl: testUrl });
+    proxyTestResult.textContent = result;
+    proxyTestResult.style.color = "#4CAF50"; // Green
+  } catch (err) {
+    proxyTestResult.textContent = err;
+    proxyTestResult.style.color = "var(--m3-sys-light-error)";
+  } finally {
+    proxyTestBtn.disabled = false;
+  }
 });
 
 proxyCloseBtn.addEventListener('click', () => {

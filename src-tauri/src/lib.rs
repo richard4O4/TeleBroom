@@ -7,6 +7,7 @@ use grammers_session::storages::SqliteSession;
 use grammers_mtsender::SenderPool;
 use grammers_session::types::{PeerId, PeerRef, PeerAuth};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use serde_json::json;
 use tokio::sync::Semaphore;
@@ -414,6 +415,38 @@ async fn start_deletion(
 }
 
 #[tauri::command]
+async fn test_proxy(proxy_url: Option<String>) -> Result<String, String> {
+    let target = "https://api.telegram.org";
+    
+    let mut builder = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10));
+
+    let effective_proxy = proxy_url.or_else(get_system_proxy_url);
+    
+    if let Some(url) = effective_proxy {
+        match reqwest::Proxy::all(&url) {
+            Ok(p) => { builder = builder.proxy(p); },
+            Err(e) => return Err(format!("Invalid proxy URL: {}", e)),
+        }
+    }
+
+    let client = builder.build().map_err(|e| e.to_string())?;
+    
+    let start = Instant::now();
+    match client.get(target).send().await {
+        Ok(resp) => {
+            let duration = start.elapsed().as_millis();
+            if resp.status().is_success() {
+                Ok(format!("Connected to Telegram! ({}ms)", duration))
+            } else {
+                Err(format!("Connected, but received status: {}", resp.status()))
+            }
+        }
+        Err(e) => Err(format!("Connection failed: {}", e)),
+    }
+}
+
+#[tauri::command]
 async fn open_url(url: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
@@ -434,6 +467,7 @@ pub fn run() {
             get_chats,
             start_deletion,
             open_url,
+            test_proxy,
             logout
         ])
         .run(tauri::generate_context!())
