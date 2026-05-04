@@ -11,17 +11,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-22.04, windows-latest]
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+            description: "macOS Silicon"
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+            description: "macOS Intel"
+          - platform: windows-latest
+            args: ""
+            description: "Windows x64"
+          - platform: ubuntu-22.04
+            args: ""
+            description: "Linux (Debian & Fedora)"
+
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf rpm
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -29,34 +50,22 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Node setup
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
+          cache: 'npm'
 
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Build for macOS (Silicon)
-        if: matrix.platform == 'macos-latest'
-        run: npm run tauri build -- --target aarch64-apple-darwin
-
-      - name: Build for macOS (Intel)
-        if: matrix.platform == 'macos-latest'
-        run: npm run tauri build -- --target x86_64-apple-darwin
-
-      - name: Build for Windows/Linux
-        if: matrix.platform != 'macos-latest'
-        run: npm run tauri build
-
-      - name: Upload artifacts
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Build and Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
-            src-tauri/target/release/bundle/appimage/*.AppImage
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+          tagName: v__VERSION__
+          releaseName: "TeleBroom v__VERSION__"
+          releaseBody: "Automated release for TeleBroom. Includes installers for macOS, Windows, and Linux (Debian/Fedora)."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
