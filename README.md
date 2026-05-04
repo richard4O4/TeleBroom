@@ -1,8 +1,10 @@
 # TeleBroom
 
-**TeleBroom** (formerly Telegram Group Message Deleter) is a high-performance, Material Design 3 based desktop application to batch delete your messages from Telegram groups and supergroups. Built with Rust (Tauri) and Vanilla JavaScript.
+<p align="center">
+  <img src="src/assets/logo.png" width="128" height="128" alt="TeleBroom Logo">
+</p>
 
-![App Screenshot](https://raw.githubusercontent.com/username/repo/main/screenshot.png)
+**TeleBroom** (formerly Telegram Group Message Deleter) is a high-performance, Material Design 3 based desktop application to batch delete your messages from Telegram groups and supergroups. Built with Rust (Tauri) and Vanilla JavaScript.
 
 ## 🚀 Features
 

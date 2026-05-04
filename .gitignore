@@ -33,3 +33,12 @@ src-tauri/config.json
 # Build artifacts
 dist/
 bin/
+
+# Security / Credentials (IMPORTANT)
+id_*
+*.pub
+*.pem
+*.key
+auth_token*
+*.p12
+*.pfx
