@@ -1,6 +1,6 @@
 [package]
 name = "telebroom"
-version = "0.1.2"
+version = "0.1.3"
 description = "TeleBroom: Telegram Group Message Deleter"
 authors = ["you"]
 edition = "2021"

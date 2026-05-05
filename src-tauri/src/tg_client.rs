@@ -11,6 +11,7 @@ pub struct AppState {
     pub api_hash: Arc<Mutex<Option<String>>>,
     pub phone: Arc<Mutex<Option<String>>>,
     pub login_token: Arc<Mutex<Option<grammers_client::client::LoginToken>>>,
+    pub password_token: Arc<Mutex<Option<grammers_client::client::PasswordToken>>>,
 }
 
 impl AppState {
@@ -21,6 +22,7 @@ impl AppState {
             api_hash: Arc::new(Mutex::new(None)),
             phone: Arc::new(Mutex::new(None)),
             login_token: Arc::new(Mutex::new(None)),
+            password_token: Arc::new(Mutex::new(None)),
         }
     }
 }

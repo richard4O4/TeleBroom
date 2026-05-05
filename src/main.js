@@ -13,6 +13,7 @@ let manualProxy = localStorage.getItem('manual_proxy') || null;
 const screens = {
   login: document.getElementById('screen-login'),
   otp: document.getElementById('screen-otp'),
+  '2fa': document.getElementById('screen-2fa'),
   main: document.getElementById('screen-main'),
   progress: document.getElementById('screen-progress')
 };
@@ -179,13 +180,47 @@ document.getElementById('btn-submit-otp').addEventListener('click', async () => 
     showScreen('main');
     await loadChats();
   } catch (err) {
-    errorEl.textContent = err;
-    errorEl.style.display = 'block';
+    if (err === "Password required") {
+      showScreen('2fa');
+    } else {
+      errorEl.textContent = err;
+      errorEl.style.display = 'block';
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = "Login";
   }
 });
+
+document.getElementById('btn-submit-2fa').addEventListener('click', async () => {
+  const password = document.getElementById('2fa-password').value;
+  const errorEl = document.getElementById('2fa-error');
+  const btn = document.getElementById('btn-submit-2fa');
+
+  if (!password) {
+    errorEl.textContent = "Please enter your password";
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner" style="width:20px; height:20px; border-width:2px;"></div>`;
+    errorEl.style.display = 'none';
+    await invoke('submit_password', { password });
+    await updateMe();
+    showScreen('main');
+    await loadChats();
+  } catch (err) {
+    errorEl.textContent = err;
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Verify Password";
+  }
+});
+
+document.getElementById('btn-back-to-otp').addEventListener('click', () => showScreen('otp'));
 
 document.getElementById('btn-back-to-login').addEventListener('click', () => showScreen('login'));
 

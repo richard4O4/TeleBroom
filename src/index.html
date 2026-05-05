@@ -97,6 +97,23 @@
         </div>
       </div>
 
+      <!-- Screen 2.5: 2FA Password -->
+      <div id="screen-2fa" class="screen">
+        <button id="btn-back-to-otp" class="btn-text" style="margin-left: -12px; margin-bottom: 12px;">← Back</button>
+        <div class="m3-surface-container" style="padding: 32px; border-radius: 28px; background-color: var(--m3-sys-light-surface-container-low);">
+          <h2 style="font-size: 2rem; font-weight: 400; margin-bottom: 8px;">Two-Step Verification</h2>
+          <p style="color: var(--m3-sys-light-on-surface-variant); margin-bottom: 32px;">Your account is protected by an additional password.</p>
+
+          <div class="m3-textfield">
+            <span class="m3-label">Password</span>
+            <input type="password" id="2fa-password" placeholder=" " />
+          </div>
+
+          <button id="btn-submit-2fa" class="btn-filled" style="width: 100%; height: 56px; border-radius: 28px; margin-top: 16px;">Verify Password</button>
+          <div id="2fa-error" class="status-msg error" style="display:none; color: var(--m3-sys-light-error); margin-top: 16px; font-size: 0.875rem; text-align: center;"></div>
+        </div>
+      </div>
+
       <!-- Screen 3: Chat Selection -->
       <div id="screen-main" class="screen">
         <div class="m3-search-bar">

@@ -198,7 +198,27 @@ async fn submit_code(
 
     match client.sign_in(&token, &code).await {
         Ok(_) => Ok("Logged in".to_string()),
-        Err(SignInError::PasswordRequired(_)) => Err("Password required".to_string()),
+        Err(SignInError::PasswordRequired(pwd_token)) => {
+            *state.password_token.lock().await = Some(pwd_token);
+            Err("Password required".to_string())
+        },
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+async fn submit_password(
+    state: State<'_, AppState>,
+    password: String,
+) -> Result<String, String> {
+    let mut client_lock = state.client.lock().await;
+    let client = client_lock.as_mut().ok_or("Client not initialized")?;
+    
+    let mut pwd_token_lock = state.password_token.lock().await;
+    let pwd_token = pwd_token_lock.take().ok_or("Password token not found")?;
+
+    match client.check_password(pwd_token, &password).await {
+        Ok(_) => Ok("Logged in".to_string()),
         Err(e) => Err(e.to_string()),
     }
 }
@@ -486,6 +506,7 @@ pub fn run() {
             get_me,
             request_code,
             submit_code,
+            submit_password,
             get_chats,
             start_deletion,
             open_url,

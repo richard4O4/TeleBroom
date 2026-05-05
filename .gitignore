@@ -1,44 +1,27 @@
-# Dependency directories
-node_modules/
-target/
+# TeleBroom - Optimized & Alphabetically Sorted Gitignore
 
-# Tauri specific
-src-tauri/target/
-src-tauri/gen/
-
-# Logs
-logs
-*.log
-npm-debug.log*
-
-# OS specific
 .DS_Store
-Thumbs.db
-
-# IDEs
-.vscode/
+.env*
 .idea/
-*.swp
-*.swo
-
-# Session / Config (Private)
-src-tauri/*.sqlite
-src-tauri/*.sqlite-journal
-src-tauri/config.json
-
-# Environment variables
-.env
-.env.local
-
-# Build artifacts
-dist/
-bin/
-
-# Security / Credentials (IMPORTANT)
-id_*
-*.pub
-*.pem
+.vscode/
 *.key
-auth_token*
+*.local
+*.log
 *.p12
+*.pem
 *.pfx
+*.pub
+*.sw[po]
+**/target/
+auth_token*
+bin/
+dist/
+id_*
+logs
+node_modules/
+npm-debug.log*
+scratch/
+src-tauri/*.sqlite*
+src-tauri/config.json
+src-tauri/gen/
+Thumbs.db
